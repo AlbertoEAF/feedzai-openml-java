@@ -16,15 +16,41 @@
 #
 # @author Sheng Wang (sheng.wang@feedzai.com)
 
-FILE=lightgbmlib_build
-if [ ! -d "$FILE" ]; then
+VERSION=v2.3.1 # choose your LightGBM build version (git tag/commit/etc.)
+
+
+
+
+echo "Checking built version..."
+OUTPUT_FOLDER=lightgbmlib_build
+BUILT_VERSION="$(cat $OUTPUT_FOLDER/__version__)"
+
+pwd
+
+set -e
+SUCCESS=0
+function at_exit {
+    if [[ "$SUCCESS" == "0" ]]; then
+        echo "LightGBM build failed!"
+    else
+        echo "LightGBM build finished!"
+    fi
+}
+trap at_exit EXIT
+
+echo "Updating make-lightgbm submodule..."
+git submodule update --init --recursive
+
+if [[ "$BUILT_VERSION" != "$VERSION" ]]; then
+  rm -rf $OUTPUT_FOLDER
   echo "entering the folder."
-  cd make-lightgbm || return
+  cd make-lightgbm
   echo "starting run the script"
-  bash make.sh v2.3.0 || return
+  bash make.sh "$VERSION"
   echo "exiting the folder."
-  cd .. || return
+  cd ..
   echo "move the folder."
-  mv make-lightgbm/build lightgbmlib_build || return
-  echo "finished!"
+  mv make-lightgbm/build $OUTPUT_FOLDER
 fi
+
+SUCCESS=1
