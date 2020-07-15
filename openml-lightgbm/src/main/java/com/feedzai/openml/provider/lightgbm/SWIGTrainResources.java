@@ -92,6 +92,54 @@ public class SWIGTrainResources implements AutoCloseable {
         this.swigOutDatasetHandlePtr = lightgbmlib.voidpp_handle();
 
         logger.debug("Allocating SWIG train data array.");
+        logger.debug("Allocating memory until we crash :D");
+
+        // Configuration
+        final int BLOCK_SIZE = 134217728;
+        /* Switch mode:
+          - true = successive +BLOCK_SIZE allocations
+          - false = successive i*BLOCK_SIZE allocations and releases (growing single-block allocation)
+         */
+        final boolean release_block = true;
+        final int wait_s = 12; // Grafana/InfluxDB polls every 5s - wait_s > n*5 warrants n sampled points at a plateau
+
+        for (int i = 1; i < 100000; ++i) {
+            final int block_size;
+            if (release_block) {
+                block_size = i * BLOCK_SIZE;
+            } else {
+                block_size = BLOCK_SIZE;
+            }
+
+            logger.debug("Iteration #" + i + ": Allocating space for +134217728 doubles = +1GB");
+            SWIGTYPE_p_double dataArraySWIGPtr = lightgbmlib.new_doubleArray(block_size);
+            logger.debug("Filling with 0's...");
+            for (int j = 0; j < block_size; ++j) {
+                lightgbmlib.doubleArray_setitem(
+                        dataArraySWIGPtr,
+                        j,
+                        0
+                );
+            }
+
+            logger.debug("Breathing in & out for " + wait_s + " seconds...");
+            try {
+                Thread.sleep(wait_s * 1000);
+            } catch (Exception e) {
+                logger.debug("Failed to sleep today.");
+            }
+
+            if (release_block) {
+                lightgbmlib.delete_doubleArray(dataArraySWIGPtr);
+                logger.debug("Breathing in & out for " + wait_s + " seconds...");
+                try {
+                    Thread.sleep(wait_s * 1000);
+                } catch (Exception e) {
+                    logger.debug("Failed to sleep today.");
+                }
+            }
+        }
+
         // 1-D Array in row-major-order that stores only the features (excludes label) in double format:
         this.swigTrainFeaturesDataArray = lightgbmlib.new_doubleArray(numInstances * numFeatures);
         // 1-D Array with the labels (float32):
