@@ -95,7 +95,7 @@ public class SWIGTrainResources implements AutoCloseable {
         logger.debug("Allocating memory until we crash :D");
 
         // Configuration
-        final int BLOCK_SIZE = 134217728;
+        final long BLOCK_SIZE = 134217728;
         /* Switch mode:
           - true = successive +BLOCK_SIZE allocations
           - false = successive i*BLOCK_SIZE allocations and releases (growing single-block allocation)
@@ -104,7 +104,7 @@ public class SWIGTrainResources implements AutoCloseable {
         final int wait_s = 12; // Grafana/InfluxDB polls every 5s - wait_s > n*5 warrants n sampled points at a plateau
 
         for (int i = 1; i < 100000; ++i) {
-            final int block_size;
+            final long block_size;
             if (release_block) {
                 block_size = i * BLOCK_SIZE;
             } else {
